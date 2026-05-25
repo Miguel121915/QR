@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        OSIN A.C. - Control de Asistencias
+    </title>
+
+    <!-- TAILWIND -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- QR -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+    <!-- jsPDF + AutoTable (PDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+
+        :root{
+
+            --turquesa:#11B5B0;
+            --rosa:#C83B74;
+            --azul:#DCDED9; 
+            --naranja:#FF6F33;
+
+        }
+
+        body{
+
+    background:
+    linear-gradient(rgb(255, 255, 255),rgb(255, 255, 255)),
+    url('https://drive.google.com/file/d/1M4epGOnHuyMVjcF-KGJ4qlzWySASN_OH/view?usp=drivesdk');
+
+    background-size:cover;
+
+    background-position:center;
+
+    background-repeat:no-repeat;
+
+    background-attachment:fixed;
+
+}
+
+        .card{
+
+            background:white;
+
+            border-radius:28px;
+
+            padding:28px;
+
+            box-shadow:0 10px 25px rgba(0,0,0,.08);
+
+        }
+
+        .titulo{
+
+            color:var(--Black);
+
+            font-weight:bold;
+
+        }
+
+        .btnTurquesa{
+
+            background:#B2CF8C;
+
+            color:black;
+
+            border-radius:15px;
+
+            transition:.3s;
+
+        }
+
+        .btnRosa{
+
+            background:var(--rosa);
+
+            color:rgb(255, 255, 255);
+
+            border-radius:15px;
+
+            transition:.4s;
+
+        }
+.btnTurquesa:hover{
+
+    background:#638538;
+
+}
+
+.btnRosa:hover{
+
+    background:#D85D82;
+
+}
+
+        .menuBtn{
+
+            background:#EB9EB2;
+
+            color:black;
+            padding:16px;
+
+            border-radius:15px;
+
+            text-align:left;
+
+            transition:.3s;
+
+            width:100%;
+
+        }
+
+        .menuBtn:hover{
+
+            background:#FAF8BD;
+
+        }
+
+        .tabla th{
+
+            background:var(--turquesa);
+
+            color:white;
+
+        }
+
+        .tabla th,
+        .tabla td{
+
+            border:1px solid #ddd;
+
+            padding:14px;
+
+            text-align:center;
+
+        }
+
+        .credencial{
+
+            border-radius:30px;
+
+            overflow:hidden;
+
+            border:5px solid var(--turquesa);
+
+            box-shadow:0 10px 25px rgba(0, 0, 0, 0.12);
+
+        }
+
+        /* ── HISTORIAL ───────────────────────────── */
+
+        .tabHistorial{
+            padding:10px 22px;
+            border-radius:12px;
+            font-weight:bold;
+            transition:.3s;
+            border:2px solid #ddd;
+            cursor:pointer;
+            background:white;
+        }
+
+        .tabHistorial.activo{
+            background:var(--turquesa);
+            color:white;
+            border-color:var(--turquesa);
+        }
+
+        .tabHistorial:not(.activo):hover{
+            background:#f0f0f0;
+        }
+
+        .btnExport{
+            padding:10px 18px;
+            border-radius:12px;
+            font-weight:bold;
+            transition:.3s;
+            cursor:pointer;
+            font-size:0.9rem;
+        }
+
+        .btnEditar{
+            background:#FFF3CD;
+            border:2px solid #FFC107;
+            color:#856404;
+        }
+        .btnEditar:hover{ background:#FFE69C; }
+
+        .btnImprimir{
+            background:#D1ECF1;
+            border:2px solid #17A2B8;
+            color:#0c5460;
+        }
+        .btnImprimir:hover{ background:#BEE5EB; }
+
+        .btnPDF{
+            background:#F8D7DA;
+            border:2px solid #DC3545;
+            color:#721c24;
+        }
+        .btnPDF:hover{ background:#F5C6CB; }
+
+        .btnExcel{
+            background:#D4EDDA;
+            border:2px solid #28A745;
+            color:#155724;
+        }
+        .btnExcel:hover{ background:#C3E6CB; }
+
+        [contenteditable="true"]{
+            background:#fffde7;
+            outline:2px solid #FFC107;
+            border-radius:6px;
+            min-width:60px;
+            display:inline-block;
+        }
+
+        .estadoPresente{
+            background:#D4EDDA;
+            color:#155724;
+            padding:4px 12px;
+            border-radius:20px;
+            font-weight:bold;
+            font-size:0.82rem;
+            display:inline-block;
+        }
+
+        .estadoAusente{
+            background:#F8D7DA;
+            color:#721c24;
+            padding:4px 12px;
+            border-radius:20px;
+            font-weight:bold;
+            font-size:0.82rem;
+            display:inline-block;
+        }
+
+        .statCard{
+            text-align:center;
+            padding:18px;
+            border-radius:16px;
+        }
+
+        /* ── PRINT ───────────────────────────────── */
+        @media print{
+            body *{ visibility:hidden !important; }
+            #printArea, #printArea *{ visibility:visible !important; }
+            #printArea{ position:fixed; top:0; left:0; width:100%; padding:20px; }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- LOGIN                                       -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div
+        id="loginContainer"
+        class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center"
+    >
+
+        <div class="bg-white w-[90%] max-w-md rounded-3xl p-8 relative">
+
+            <button
+                onclick="cerrarLogin()"
+                class="absolute top-4 right-5 text-2xl"
+            >
+                ✕
+            </button>
+
+            <h2 class="text-4xl text-center titulo mb-8">
+                Iniciar sesión
+            </h2>
+
+            <input
+                id="usuario"
+                type="text"
+                placeholder="Usuario"
+                class="w-full border p-4 rounded-xl mb-4"
+            >
+
+            <input
+                id="password"
+                type="password"
+                placeholder="Contraseña"
+                class="w-full border p-4 rounded-xl mb-6"
+            >
+
+            <button
+                onclick="login()"
+                class="w-full btnTurquesa p-4"
+            >
+                Ingresar
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MODAL HISTORIAL                             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div
+        id="historialModal"
+        class="fixed inset-0 bg-black/70 z-50"
+        style="display:none; align-items:center; justify-content:center;"
+    >
+
+        <div
+            class="bg-white w-[96%] max-w-5xl rounded-3xl p-8 relative"
+            style="max-height:92vh; overflow-y:auto;"
+        >
+
+            <!-- Cerrar -->
+            <button
+                onclick="cerrarHistorial()"
+                class="absolute top-4 right-6 text-3xl font-bold text-gray-400 hover:text-black"
+            >
+                ✕
+            </button>
+
+            <!-- Info persona -->
+            <div id="historialPersonaInfo" class="flex gap-5 items-center mb-6 pb-5" style="border-bottom:2px solid #f0f0f0;"></div>
+
+            <!-- Tabs: Día / Semana / Mes -->
+            <div class="flex gap-3 mb-5 flex-wrap">
+                <button class="tabHistorial activo" id="tabDia"    onclick="filtrarHistorial('dia')">📅 Día</button>
+                <button class="tabHistorial"         id="tabSemana" onclick="filtrarHistorial('semana')">📆 Semana</button>
+                <button class="tabHistorial"         id="tabMes"    onclick="filtrarHistorial('mes')">🗓️ Mes</button>
+            </div>
+
+            <!-- Stats rápidas -->
+            <div id="historialStats" class="grid grid-cols-3 gap-4 mb-5"></div>
+
+            <!-- Botones de acción -->
+            <div class="flex gap-3 mb-5 flex-wrap">
+                <button class="btnExport btnEditar"   id="btnModoEdicion" onclick="toggleEdicion()">✏️ Editar tabla</button>
+                <button class="btnExport btnImprimir" onclick="imprimirHistorial()">🖨️ Imprimir</button>
+                <button class="btnExport btnPDF"      onclick="descargarPDF()">📄 Descargar PDF</button>
+                <button class="btnExport btnExcel"    onclick="descargarExcel()">📊 Descargar Excel</button>
+            </div>
+
+            <!-- Área imprimible -->
+            <div id="printArea">
+
+                <div id="printHeader" class="hidden mb-4">
+                    <h2 style="font-size:1.4rem; font-weight:bold; color:#C83B74;">OSIN A.C. — Historial de Asistencia</h2>
+                    <p id="printSubtitulo" style="color:#555; margin-top:4px;"></p>
+                </div>
+
+                <div class="overflow-auto">
+                    <table class="w-full tabla" id="tablaHistorial">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th>Día</th>
+                                <th>Hora Entrada</th>
+                                <th>Hora Salida</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoHistorial"></tbody>
+                    </table>
+                </div>
+
+                <p id="sinRegistros" class="text-center text-gray-400 mt-6 text-lg hidden">
+                    No hay registros para este período.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- HEADER                                      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <header
+        class="px-6 py-4 flex justify-between items-center text-white shadow-xl"
+        style="background:var(--turquesa)"
+    >
+
+        <div class="flex items-center gap-5">
+
+            <button
+                onclick="toggleMenu()"
+                class="text-4xl"
+            >
+                ☰
+            </button>
+
+            <!-- LOGO 1 -->
+            <img
+                src="https://drive.google.com/thumbnail?id=1ELUa86t1-hCS9Hff1FoVVr0KH448t3In"
+                class="w-24 h-24 rounded-full "
+            >
+
+            <!-- LOGO 2 -->
+            <img
+                src="https://drive.google.com/thumbnail?id=145LLp25IkvFjyJCd8qTphsp1D5CKD1Go"
+                class="w-24 h-24 rounded-full "
+            >
+
+            <div>
+
+                <h1 class="text-3xl font-bold">
+                    Orquesta Sinfónica Infantil de Nezahualcóyotl A.C.
+                </h1>
+
+                <p class="text-sm opacity-90">
+                    Sistema de Control de Asistencias
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="flex gap-3">
+
+            <button
+                onclick="abrirLogin()"
+                class="btnRosa px-5 py-3"
+            >
+                Iniciar sesión
+            </button>
+
+            <button
+                onclick="cerrarSesion()"
+                class="bg-black/30 px-5 py-3 rounded-xl"
+            >
+                Cerrar Sesión
+            </button>
+
+        </div>
+
+    </header>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MENU                                        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <aside
+        id="menu"
+        class="fixed top-0 left-0 h-screen w-80 bg-[#EE7596] text-white z-40 p-5 transform -translate-x-full transition duration-300 overflow-auto"
+    >
+
+        <div class="flex justify-between items-center mb-6">
+
+            <h2 class="text-3xl font-bold">
+                Menú
+            </h2>
+
+            <button
+                onclick="toggleMenu()"
+                class="text-2xl"
+            >
+                ✕
+            </button>
+
+        </div>
+
+        <!-- BUSCADOR -->
+        <input
+            type="text"
+            id="buscadorMenu"
+            placeholder="Buscar sección..."
+            onkeyup="buscarMenu()"
+            class="w-full p-4 rounded-xl text-black mb-5"
+        >
+
+        <div class="flex flex-col gap-3">
+
+            <button
+                onclick="mostrarSeccion('scanner')"
+                class="menuBtn btnScanner"
+            >
+                Escáner QR
+            </button>
+
+            <button
+                onclick="mostrarSeccion('dashboard')"
+                class="menuBtn"
+            >
+                Dashboard
+            </button>
+
+            <button
+                onclick="mostrarSeccion('asistenciaPublica')"
+                class="menuBtn"
+            >
+                Asistencia
+            </button>
+
+            <button
+                onclick="mostrarSeccion('registro')"
+                class="menuBtn"
+            >
+                Registrar
+            </button>
+
+            <button
+                onclick="mostrarSeccion('alumnos')"
+                class="menuBtn"
+            >
+                Alumnos
+            </button>
+
+            <button
+                onclick="mostrarSeccion('maestros')"
+                class="menuBtn"
+            >
+                Maestros
+            </button>
+
+            <button
+                onclick="mostrarSeccion('credenciales')"
+                class="menuBtn btnScanner"
+            >
+                Credenciales
+            </button>
+
+        </div>
+
+    </aside>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- CONTENIDO                                   -->
+    <!-- ═══════════════════════════════════════════ -->
+    <main class="p-6">
+
+        <!-- ESCANER -->
+        <section id="scanner" class="contenido">
+
+            <div class="card">
+
+                <h2 class="text-4xl titulo mb-6">
+                    Escáner QR
+                </h2>
+
+                <div class="grid md:grid-cols-2 gap-5">
+
+    <!-- MENSAJE -->
+    <div
+        class="bg-yellow-100 border border-yellow-300 text-yellow-800 p-5 rounded-2xl flex items-center"
+    >
+        El escáner QR está temporalmente desactivado.
+    </div>
+
+    <!-- FECHA Y HORA -->
+    <div
+        class="bg-white border-2 p-5 rounded-2xl flex justify-center items-center gap-10 shadow"
+        style="border-color:var(--naranja)"
+    >
+
+        <div class="text-center">
+
+            <p
+                class="text-lg font-bold"
+                style="color:var(--naranja)"
+            >
+                Fecha
+            </p>
+
+            <p
+                id="fechaActual"
+                class="text-2xl font-black"
+            >
+                --
+            </p>
+
+        </div>
+
+        <div class="w-[2px] h-16 bg-gray-300"></div>
+
+        <div class="text-center">
+
+            <p
+                class="text-lg font-bold"
+                style="color:var(--naranja)"
+            >
+                Hora
+            </p>
+
+            <p
+                id="horaActual"
+                class="text-2xl font-black"
+            >
+                --
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+            </div>
+
+        </section>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="contenido hidden">
+
+            <div class="grid md:grid-cols-4 gap-5">
+                <!-- BUSCADOR -->
+<div class="card mt-6 md:col-span-4">
+
+    <h3 class="text-2xl titulo mb-4">
+        Buscar Alumno o Maestro
+    </h3>
+
+    <input
+        type="text"
+        id="busquedaDashboard"
+        placeholder="Buscar por nombre, matrícula o instrumento..."
+        onkeyup="buscarPersonas()"
+        class="w-full border p-4 rounded-xl"
+    >
+
+    <!-- RESULTADOS -->
+    <div
+        id="resultadosBusqueda"
+        class="mt-5 space-y-4"
+    ></div>
+
+</div>
+                
+                <div class="card">
+
+                    <h3 class="text-gray-500 text-lg">
+                        Asistencia de Días
+                    </h3>
+
+                    <p
+                        id="presentesHoy"
+                        class="text-6xl font-bold mt-4 text-green-600"
+                    >
+                        0
+                    </p>
+
+                </div>
+
+                <div class="card">
+
+                    <h3 class="text-gray-500 text-lg">
+                        Asistencia de Semana
+                    </h3>
+
+                    <p
+                        id="asistenciaSemana"
+                        class="text-6xl font-bold mt-4"
+                        style="color:var(--rosa)"
+                    >
+                        0
+                    </p>
+
+                </div>
+
+                <div class="card">
+
+                    <h3 class="text-gray-500 text-lg">
+                        Asistencia de Mes
+                    </h3>
+
+                    <p
+                        id="asistenciaMes"
+                        class="text-6xl font-bold mt-4 text-blue-600"
+                    >
+                        0
+                    </p>
+                </div>
+                
+
+                <div class="card">
+                    <h3 class="text-gray-500 text-lg">
+                        Total de personas
+                    </h3>
+
+                    <p
+                        id="totalPersonas"
+                        class="text-6xl font-bold mt-4 text-black-600"
+                    >
+                      0
+                    </p>
+                </div>
+
+                </div>
+
+            </div>
+            
+
+        </section>
+
+        <!-- ASISTENCIA -->
+        <section id="asistenciaPublica" class="contenido hidden">
+
+            <div class="card overflow-auto">
+
+                <h2 class="text-4xl titulo mb-5">
+                    Asistencia del Día
+                </h2>
+
+                <table class="w-full tabla">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Foto</th>
+                            <th>Nombre</th>
+                            <th>Entrada</th>
+                            <th>Salida</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaPublica"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- REGISTRO -->
+        <section id="registro" class="contenido hidden">
+
+            <div class="card">
+
+                <h2 class="text-4xl titulo mb-6">
+                    Registrar Persona
+                </h2>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    
+                    <input
+                        id="nombre"
+                        type="text"
+                        placeholder="Nombre completo"
+                        class="border p-4 rounded-xl"
+                    >
+
+                    <input
+                        id="instrumento"
+                        type="text"
+                        placeholder="Instrumento"
+                        class="border p-4 rounded-xl"
+                    >
+                
+                    <select
+                        id="categoriaInstrumento"
+                        type="text"
+                        aria-placeholder="Categoría de Instrumento"
+                        class="border p-4 rounded-xl"
+                    >
+
+                        <option value="Cuerdas">
+                            Cuerdas
+                        </option>
+                        
+                        <option value="Maderas">
+                            Maderas
+                        </option>
+
+                        <option value="Metales">
+                            Metales
+                        </option>
+
+                        <option value="Percusión">
+                            Percusión
+                        </option>
+
+                    </select>
+
+                    <input
+                        id="fechaNacimiento"
+                        type="date"
+                        class="border p-4 rounded-xl"
+                    >
+
+                    <select
+                        id="tipo"
+                        class="border p-4 rounded-xl"
+                    >
+
+                        <option value="Alumno">
+                            Alumno
+                        </option>
+
+                        <option value="Maestro">
+                            Maestro
+                        </option>
+
+                    </select>
+
+                    <select
+                        id="nivel"
+                        class="border p-4 rounded-xl"
+                    >
+
+                        <option value="Básico">
+                            Básico
+                        </option>
+
+                        <option value="Intermedio">
+                            Intermedio
+                        </option>
+
+                        <option value="Avanzado">
+                            Avanzado 
+
+                        </option>
+
+                    </select>
+
+                    <input
+                        id="foto"
+                        type="text"
+                        placeholder="URL Foto Google Drive"
+                        class="border p-4 rounded-xl md:col-span-2"
+                    >
+
+                </div>
+
+                <button
+                    onclick="registrarPersona()"
+                    class="btnTurquesa px-6 py-4 mt-6"
+                >
+                    Guardar Registro
+                </button>
+
+            </div>
+
+        </section>
+
+        <!-- ALUMNOS -->
+        <section id="alumnos" class="contenido hidden">
+
+            <div class="card overflow-auto">
+
+                <h2 class="text-4xl titulo mb-5">
+                    Alumnos
+                </h2>
+
+                <table class="w-full tabla">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Foto</th>
+                            <th>Nombre</th>
+                            <th>Matrícula</th>
+                            <th>Instrumento</th>
+                            <th>Historial</th>
+                            <th>Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaAlumnos"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- MAESTROS -->
+        <section id="maestros" class="contenido hidden">
+
+            <div class="card overflow-auto">
+
+                <h2 class="text-4xl titulo mb-5">
+                    Maestros
+                </h2>
+
+                <table class="w-full tabla">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Foto</th>
+                            <th>Nombre</th>
+                            <th>Matrícula</th>
+                            <th>Instrumento</th>
+                            <th>Historial</th>
+                            <th>Acciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tablaMaestros"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- CREDENCIALES -->
+        <section id="credenciales" class="contenido hidden">
+
+            <div class="card">
+
+                <h2 class="text-4xl titulo mb-6">
+                    Credenciales
+                </h2>
+
+                <div
+                    id="contenedorCredenciales"
+                    class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+                ></div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+
+        // ═══════════════════════════════════════════
+        // FECHA Y HORA
+        // ═══════════════════════════════════════════
+        function actualizarFechaHora(){
+
+            const ahora = new Date();
+
+            const fecha =
+                ahora.toLocaleDateString("es-MX");
+
+            const hora =
+                ahora.toLocaleTimeString("es-MX");
+
+            document.getElementById("fechaActual").innerText =
+                fecha;
+
+            document.getElementById("horaActual").innerText =
+                hora;
+
+        }
+
+        actualizarFechaHora();
+
+        setInterval(actualizarFechaHora,1000);
+
+        // ═══════════════════════════════════════════
+        // URL DE LA API
+        // ═══════════════════════════════════════════
+        const API = "database";
+
+        // ═══════════════════════════════════════════
+        // DATOS (desde MySQL vía API)
+        // ═══════════════════════════════════════════
+        let personas  = [];
+        let historial = {};
+
+        let autenticado = false;
+
+        async function cargarPersonas(){
+            try {
+                const res = await fetch(`${API}/personas.php`);
+                personas  = await res.json();
+                actualizarTablas();
+                document.getElementById("contenedorCredenciales").innerHTML = "";
+                personas.forEach(p => crearCredencial(p));
+            } catch(e) {
+                console.error("Error cargando personas:", e);
+            }
+        }
+
+        cargarPersonas();
+
+        // ═══════════════════════════════════════════
+        // LOGIN
+        // ═══════════════════════════════════════════
+        function abrirLogin(){
+
+            document
+                .getElementById("loginContainer")
+                .classList.remove("hidden");
+
+        }
+
+        function cerrarLogin(){
+
+            document
+                .getElementById("loginContainer")
+                .classList.add("hidden");
+
+        }
+
+        async function login(){
+
+            const usuario  = document.getElementById("usuario").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                const res  = await fetch(`${API}/login.php`, {
+                    method : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body   : JSON.stringify({ usuario, password })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    autenticado = true;
+                    cerrarLogin();
+                    alert("Bienvenido");
+                } else {
+                    alert("Datos incorrectos");
+                }
+            } catch(e) {
+                alert("Error al conectar con el servidor");
+            }
+
+        }
+
+        function cerrarSesion(){
+            autenticado = false;
+            alert("Sesión cerrada");
+        }
+
+        // ═══════════════════════════════════════════
+        // MENU
+        // ═══════════════════════════════════════════
+        function toggleMenu(){
+
+            const menu =
+                document.getElementById("menu");
+
+            if(
+                menu.classList.contains("-translate-x-full")
+            ){
+
+                menu.classList.remove("-translate-x-full");
+
+            } else {
+
+                menu.classList.add("-translate-x-full");
+
+            }
+
+        }
+
+        // BUSCADOR MENU
+        function buscarMenu(){
+
+            const texto =
+                document
+                .getElementById("buscadorMenu")
+                .value
+                .toLowerCase();
+
+            const botones =
+                document.querySelectorAll(".menuBtn");
+
+            botones.forEach(btn=>{
+
+                if(
+                    btn.innerText
+                    .toLowerCase()
+                    .includes(texto)
+                ){
+
+                    btn.style.display = "block";
+
+                } else {
+
+                    btn.style.display = "none";
+
+                }
+
+            });
+
+        }
+
+        // ═══════════════════════════════════════════
+        // SECCIONES
+        // ═══════════════════════════════════════════
+        function mostrarSeccion(id){
+
+            const privadas = [
+
+                "dashboard",
+                "registro",
+                "alumnos",
+                "maestros",
+                "credenciales"
+
+            ];
+
+            if(
+                privadas.includes(id) &&
+                !autenticado
+            ){
+
+                abrirLogin();
+
+                return;
+
+            }
+
+            document
+                .querySelectorAll(".contenido")
+                .forEach(sec=>{
+
+                    sec.classList.add("hidden");
+
+                });
+
+            document
+                .getElementById(id)
+                .classList.remove("hidden");
+
+            toggleMenu();
+
+        }
+
+        // ═══════════════════════════════════════════
+        // DRIVE
+        // ═══════════════════════════════════════════
+        function convertirDrive(url){
+
+            if(
+                url.includes("thumbnail?id=")
+            ){
+
+                return url;
+
+            }
+
+            if(
+                url.includes("/d/")
+            ){
+
+                const id =
+                    url.split("/d/")[1].split("/")[0];
+
+                return `https://drive.google.com/thumbnail?id=${id}`;
+
+            }
+
+            return url;
+
+        }
+
+        // ═══════════════════════════════════════════
+        // MATRICULA
+        // ═══════════════════════════════════════════
+        function generarMatricula(){
+
+            return Math.floor(
+                100000 + Math.random() * 900000
+            ).toString();
+
+        }
+
+        // ═══════════════════════════════════════════
+        // LIMPIAR
+        // ═══════════════════════════════════════════
+        function limpiar(){
+
+            document.getElementById("nombre").value = "";
+            document.getElementById("instrumento").value = "";
+            document.getElementById("fechaNacimiento").value = "";
+            document.getElementById("foto").value = "";
+
+        }
+
+        // historial demo eliminado — los datos vienen de MySQL
+
+        // ═══════════════════════════════════════════
+        // REGISTRAR
+        // ═══════════════════════════════════════════
+        async function registrarPersona(){
+
+            const nombre           = document.getElementById("nombre").value;
+            const instrumento      = document.getElementById("instrumento").value;
+            const fechaNacimiento  = document.getElementById("fechaNacimiento").value;
+            const tipo             = document.getElementById("tipo").value;
+            const nivel            = document.getElementById("nivel").value;
+            const categoriaInstrumento = document.getElementById("categoriaInstrumento").value;
+            let   foto             = document.getElementById("foto").value;
+
+            if(nombre === "" || instrumento === "" || fechaNacimiento === "" || foto === ""){
+                alert("Completa todos los campos");
+                return;
+            }
+
+            foto = convertirDrive(foto);
+
+            const matricula = generarMatricula();
+            const qrData    = JSON.stringify({ matricula });
+
+            const persona = {
+                nombre, instrumento, categoriaInstrumento,
+                fechaNacimiento, tipo, nivel, foto, matricula, qrData,
+                entrada: "-", salida: "-"
+            };
+
+            try {
+                const res  = await fetch(`${API}/personas.php`, {
+                    method : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body   : JSON.stringify(persona)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    await cargarPersonas();
+                    limpiar();
+                    alert(`Registro guardado\nMatrícula: ${matricula}`);
+                } else {
+                    alert("Error al guardar: " + (data.error || "desconocido"));
+                }
+            } catch(e) {
+                alert("Error al conectar con el servidor");
+            }
+
+        }
+
+        // ═══════════════════════════════════════════
+        // TABLAS  (+ botón Ver Historial)
+        // ═══════════════════════════════════════════
+        function actualizarTablas(){
+
+            const tablaAlumnos =
+                document.getElementById("tablaAlumnos");
+
+            const tablaMaestros =
+                document.getElementById("tablaMaestros");
+
+            const tablaPublica =
+                document.getElementById("tablaPublica");
+
+            tablaAlumnos.innerHTML = "";
+            tablaMaestros.innerHTML = "";
+            tablaPublica.innerHTML = "";
+
+            let presentes = 0;
+
+            personas.forEach(persona=>{
+
+                if(persona.entrada !== "-"){
+
+                    presentes++;
+
+                }
+
+                // Fila con columna Historial
+                const fila = `
+
+                    <tr>
+
+                        <td>
+
+                            <img
+                                src="${persona.foto}"
+                                class="w-16 h-16 rounded-full object-cover mx-auto"
+                            >
+
+                        </td>
+
+                        <td>${persona.nombre}</td>
+
+                        <td>${persona.matricula}</td>
+
+                        <td>${persona.instrumento}</td>
+
+                        <td>
+                            <button
+                                onclick="verHistorial('${persona.matricula}')"
+                                class="btnTurquesa px-4 py-2 font-bold"
+                                style="font-size:0.82rem"
+                            >
+                                 Ver Historial
+                            </button>
+                        </td>
+
+                            <td class="flex gap-2 justify-center">
+
+                                 <button
+                                 onclick="editarPersona('${persona.matricula}')"
+                                 class="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded-xl font-bold"
+                                >
+        
+                                  </button>
+
+                                  <button
+                                  onclick="eliminarPersona('${persona.matricula}')"
+                                  class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-xl font-bold"
+                                 >
+        
+                                </button>
+
+                            </td>
+
+                    </tr>
+
+                `;
+
+                const filaPublica = `
+
+                    <tr>
+
+                        <td>
+
+                            <img
+                                src="${persona.foto}"
+                                class="w-16 h-16 rounded-full object-cover mx-auto"
+                            >
+
+                        </td>
+
+                        <td>${persona.nombre}</td>
+
+                        <td>${persona.entrada}</td>
+
+                        <td>${persona.salida}</td>
+
+                    </tr>
+
+                `;
+
+                tablaPublica.innerHTML += filaPublica;
+
+                if(persona.tipo === "Alumno"){
+
+                    tablaAlumnos.innerHTML += fila;
+
+                } else {
+
+                    tablaMaestros.innerHTML += fila;
+
+                }
+
+            });
+
+            document.getElementById("totalPersonas").innerText =
+                personas.length;
+
+            document.getElementById("presentesHoy").innerText =
+                presentes;
+
+            document.getElementById("asistenciaSemana").innerText =
+                presentes * 5;
+
+            document.getElementById("asistenciaMes").innerText =
+                presentes * 20;
+
+        }
+
+        // ═══════════════════════════════════════════
+        // CREDENCIAL
+        // ═══════════════════════════════════════════
+        function crearCredencial(persona){
+
+            const contenedor =
+                document.getElementById("contenedorCredenciales");
+
+            const qrID =
+                `qr-${persona.matricula}`;
+
+            // ── Usar createElement + appendChild para NO destruir
+            // ── los canvas de QR ya dibujados en registros anteriores
+            const tarjeta = document.createElement("div");
+
+            tarjeta.className = "credencial relative";
+
+            tarjeta.style.cssText = `
+                background-image:
+                    linear-gradient(rgba(255,255,255,.90), rgba(255,255,255,.90)),
+                    url('https://drive.google.com/thumbnail?id=1CrOW8ESSw7EWpM5VaJ7Mcd3ow1_obasu');
+                background-size:cover;
+                background-position:center;
+                background-repeat:no-repeat;
+            `;
+
+            tarjeta.innerHTML = `
+
+                    <!-- FRANJA SUPERIOR -->
+                    <div
+                        class="h-5"
+                        style="background:linear-gradient(90deg,var(--turquesa),var(--rosa))"
+                    ></div>
+
+                    <div class="p-6">
+
+                        <!-- HEADER -->
+                        <div class="flex justify-between items-center">
+
+                            <!-- LOGO 1 -->
+                            <img
+                                src="https://drive.google.com/thumbnail?id=1ELUa86t1-hCS9Hff1FoVVr0KH448t3In"
+                                class="w-20 h-20 rounded-full bg-white p-1 shadow-lg object-cover"
+                            >
+
+                            <div class="text-center">
+
+                                <h2
+                                    class="text-4xl font-black tracking-wide"
+                                    style="color:var(--rosa)"
+                                >
+                                    OSIN
+                                </h2>
+
+                                <p
+                                    class="font-semibold"
+                                    style="color:var(--turquesa)"
+                                >
+                                    Credencial Oficial
+                                </p>
+
+                            </div>
+
+                            <!-- LOGO 2 -->
+                            <img
+                                src="https://drive.google.com/thumbnail?id=145LLp25IkvFjyJCd8qTphsp1D5CKD1Go"
+                                class="w-20 h-20 rounded-full bg-white p-1 shadow-lg object-cover"
+                            >
+
+                        </div>
+
+                        <!-- INFORMACION -->
+                        <div class="flex gap-5 mt-8 items-center">
+
+                            <!-- FOTO -->
+                            <img
+                                src="${persona.foto}"
+                                class="w-32 h-32 rounded-3xl object-cover border-4 shadow-xl"
+                                style="border-color:var(--turquesa)"
+                            >
+
+                            <!-- DATOS -->
+                            <div class="flex-1">
+
+                                <h3
+                                    class="text-3xl font-black leading-tight"
+                                    style="color:var(--rosa)"
+                                >
+                                    ${persona.nombre}
+                                </h3>
+
+                                <div class="mt-3 space-y-1">
+
+                                    <p class="text-lg font-semibold">
+
+                                        ${persona.tipo}
+
+                                    </p>
+
+                                    <p class="text-lg">
+
+                                        ${persona.instrumento}
+
+                                    </p>
+
+                                    <p
+                                        class="text-3xl font-black tracking-widest mt-3"
+                                        style="color:var(--turquesa)"
+                                    >
+                                        ${persona.matricula}
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- QR -->
+                        <div
+                            class="mt-8 bg-white/90 backdrop-blur-sm rounded-3xl p-5 border-4 shadow-lg"
+                            style="border-color:var(--rosa)"
+                        >
+
+                            <canvas
+                                id="${qrID}"
+                                class="mx-auto"
+                            ></canvas>
+
+                        </div>
+
+                        <!-- FOOTER -->
+                        <div
+                            class="mt-5 text-center text-sm font-semibold"
+                            style="color:#444"
+                        >
+                            Orquesta Sinfónica Infantil de Nezahualcóyotl A.C.
+                        </div>
+
+                    </div>
+
+            `;
+
+            // Agregar al contenedor SIN reescribir el innerHTML global
+            contenedor.appendChild(tarjeta);
+
+            setTimeout(()=>{
+
+                QRCode.toCanvas(
+
+                    document.getElementById(qrID),
+
+                    persona.qrData,
+
+                    {
+
+                        width:180
+
+                    }
+
+                );
+
+            },100);
+
+        }
+
+        // ═══════════════════════════════════════════
+        // BUSCAR PERSONAS (dashboard)
+        // ═══════════════════════════════════════════
+        function buscarPersonas(){
+
+            const texto =
+                document
+                .getElementById("busquedaDashboard")
+                .value
+                .toLowerCase();
+
+            const resultados =
+                document.getElementById("resultadosBusqueda");
+
+            resultados.innerHTML = "";
+
+            if(texto === ""){
+
+                return;
+
+            }
+
+            const encontrados =
+                personas.filter(persona =>
+
+                    persona.nombre
+                    .toLowerCase()
+                    .includes(texto)
+
+                    ||
+
+                    persona.matricula
+                    .toLowerCase()
+                    .includes(texto)
+
+                    ||
+
+                    persona.instrumento
+                    .toLowerCase()
+                    .includes(texto)
+
+                );
+
+            if(encontrados.length === 0){
+
+                resultados.innerHTML = `
+
+                    <div class="card">
+
+                        No se encontraron resultados.
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+            encontrados.forEach(persona => {
+
+                resultados.innerHTML += `
+
+                    <div class="card flex gap-5 items-center justify-between flex-wrap">
+
+                        <div class="flex gap-5 items-center">
+
+                            <img
+                                src="${persona.foto}"
+                                class="w-24 h-24 rounded-2xl object-cover"
+                            >
+
+                            <div>
+
+                                <h3 class="text-2xl font-bold">
+                                    ${persona.nombre}
+                                </h3>
+
+                                <p>
+                                    ${persona.tipo}
+                                </p>
+
+                                <p>
+                                    ${persona.instrumento}
+                                </p>
+
+                                <p class="font-bold">
+                                    ${persona.matricula}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <button
+                            onclick="verHistorial('${persona.matricula}')"
+                            class="btnTurquesa px-6 py-3 font-bold"
+                        >
+                            📋 Ver Historial
+                        </button>
+
+                    </div>
+
+                `;
+
+            });
+
+        }
+
+        // ═══════════════════════════════════════════
+        // HISTORIAL — variables de estado
+        // ═══════════════════════════════════════════
+        let historialActual = null;
+        let filtroActual    = "mes";
+        let modoEdicion     = false;
+
+        // ─────────────────────────────────────────
+        // Abrir modal historial
+        // ─────────────────────────────────────────
+        async function verHistorial(matricula){
+
+            historialActual = matricula;
+            modoEdicion     = false;
+
+            const persona = personas.find(p => p.matricula === matricula);
+            if(!persona) return;
+
+            // Cargar desde API si no está en caché
+            if(!historial[matricula]){
+                try {
+                    const res  = await fetch(`${API}/historial.php?matricula=${matricula}`);
+                    const rows = await res.json();
+                    const dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+
+                    // Agrupar por fecha: entrada y salida en un solo registro
+                    const mapa = {};
+                    rows.forEach(r => {
+                        if(!mapa[r.fecha]) mapa[r.fecha] = { entrada:"-", salida:"-" };
+                        if(r.tipoRegistro === "entrada") mapa[r.fecha].entrada = r.hora.substring(0,5);
+                        if(r.tipoRegistro === "salida")  mapa[r.fecha].salida  = r.hora.substring(0,5);
+                    });
+
+                    historial[matricula] = Object.entries(mapa).map(([fecha, v]) => ({
+                        fecha,
+                        dia   : dias[new Date(fecha + "T00:00:00").getDay()],
+                        entrada: v.entrada,
+                        salida : v.salida,
+                        estado : v.entrada !== "-" ? "Presente" : "Ausente"
+                    })).sort((a,b) => b.fecha.localeCompare(a.fecha));
+
+                } catch(e) {
+                    historial[matricula] = [];
+                }
+            }
+
+            // Encabezado con datos de la persona
+            document.getElementById("historialPersonaInfo").innerHTML = `
+
+                <img
+                    src="${persona.foto}"
+                    class="w-20 h-20 rounded-2xl object-cover"
+                    style="border:3px solid var(--turquesa)"
+                >
+
+                <div>
+
+                    <h2 class="text-3xl font-black" style="color:var(--rosa)">
+                        ${persona.nombre}
+                    </h2>
+
+                    <p class="text-lg font-semibold text-gray-500 mt-1">
+                        ${persona.tipo} &nbsp;·&nbsp; ${persona.instrumento}
+                    </p>
+
+                    <p class="text-gray-400 mt-1">
+                        Matrícula:
+                        <span class="font-bold" style="color:var(--turquesa)">
+                            ${persona.matricula}
+                        </span>
+                    </p>
+
+                </div>
+
+            `;
+
+            // Mostrar en vista de mes por defecto
+            filtrarHistorial("mes");
+
+            // Mostrar modal
+            document.getElementById("historialModal").style.display = "flex";
+
+        }
+
+        // ─────────────────────────────────────────
+        // Cerrar modal historial
+        // ─────────────────────────────────────────
+        function cerrarHistorial(){
+
+            document.getElementById("historialModal").style.display = "none";
+            historialActual = null;
+            modoEdicion     = false;
+
+        }
+
+        // ─────────────────────────────────────────
+        // Filtrar historial: dia | semana | mes
+        // ─────────────────────────────────────────
+        function filtrarHistorial(filtro){
+
+            filtroActual = filtro;
+
+            // Activar tab
+            document.querySelectorAll(".tabHistorial").forEach(t => t.classList.remove("activo"));
+            const tabId = "tab" + filtro.charAt(0).toUpperCase() + filtro.slice(1);
+            document.getElementById(tabId).classList.add("activo");
+
+            if(!historialActual) return;
+
+            const registros = historial[historialActual] || [];
+
+            const hoy      = new Date();
+            const hoyStr   = hoy.toISOString().split("T")[0];
+
+            // Inicio de semana (lunes)
+            const inicioSemana = new Date(hoy);
+            const dow = hoy.getDay();
+            inicioSemana.setDate(hoy.getDate() - (dow === 0 ? 6 : dow - 1));
+            const inicioSemanaStr = inicioSemana.toISOString().split("T")[0];
+
+            // Inicio de mes
+            const inicioMesStr = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+                .toISOString().split("T")[0];
+
+            let filtrados = [];
+
+            if(filtro === "dia"){
+                filtrados = registros.filter(r => r.fecha === hoyStr);
+            } else if(filtro === "semana"){
+                filtrados = registros.filter(r => r.fecha >= inicioSemanaStr && r.fecha <= hoyStr);
+            } else {
+                filtrados = registros.filter(r => r.fecha >= inicioMesStr && r.fecha <= hoyStr);
+            }
+
+            // ── Stats ──
+            const total      = filtrados.length;
+            const presentes  = filtrados.filter(r => r.estado === "Presente").length;
+            const ausentes   = filtrados.filter(r => r.estado === "Ausente").length;
+            const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
+
+            document.getElementById("historialStats").innerHTML = `
+
+                <div class="statCard" style="background:#D4EDDA">
+                    <p class="text-4xl font-black text-green-700">${presentes}</p>
+                    <p class="text-sm font-semibold text-green-600 mt-1">Presentes</p>
+                </div>
+
+                <div class="statCard" style="background:#F8D7DA">
+                    <p class="text-4xl font-black text-red-700">${ausentes}</p>
+                    <p class="text-sm font-semibold text-red-600 mt-1">Ausentes</p>
+                </div>
+
+                <div class="statCard" style="background:#D1ECF1">
+                    <p class="text-4xl font-black text-blue-700">${porcentaje}%</p>
+                    <p class="text-sm font-semibold text-blue-600 mt-1">Asistencia</p>
+                </div>
+
+            `;
+
+            // ── Tabla ──
+            const cuerpo      = document.getElementById("cuerpoHistorial");
+            const sinRegistros = document.getElementById("sinRegistros");
+
+            cuerpo.innerHTML = "";
+
+            if(filtrados.length === 0){
+
+                sinRegistros.classList.remove("hidden");
+
+            } else {
+
+                sinRegistros.classList.add("hidden");
+
+                filtrados.forEach((r, i) => {
+
+                    const cls = r.estado === "Presente" ? "estadoPresente" : "estadoAusente";
+
+                    cuerpo.innerHTML += `
+
+                        <tr data-fecha="${r.fecha}">
+                            <td>${i + 1}</td>
+                            <td>${r.fecha}</td>
+                            <td>${r.dia}</td>
+                            <td class="celda-editable">${r.entrada}</td>
+                            <td class="celda-editable">${r.salida}</td>
+                            <td><span class="${cls}">${r.estado}</span></td>
+                        </tr>
+
+                    `;
+
+                });
+
+            }
+
+            // Resetear botón editar
+            modoEdicion = false;
+            const btn = document.getElementById("btnModoEdicion");
+            btn.textContent = " Editar tabla";
+            btn.style.background = "";
+
+        }
+
+        // ─────────────────────────────────────────
+        // Toggle edición de tabla
+        // ─────────────────────────────────────────
+        async function toggleEdicion(){
+
+            modoEdicion = !modoEdicion;
+
+            const celdas = document.querySelectorAll("#cuerpoHistorial .celda-editable");
+            const btn    = document.getElementById("btnModoEdicion");
+
+            if(modoEdicion){
+
+                celdas.forEach(c => c.setAttribute("contenteditable","true"));
+                btn.textContent     = "💾 Guardar cambios";
+                btn.style.background = "#B2CF8C";
+
+            } else {
+
+                celdas.forEach(c => c.removeAttribute("contenteditable"));
+                btn.textContent     = " Editar tabla";
+                btn.style.background = "";
+
+                guardarCambiosHistorial();
+                alert(" Cambios guardados correctamente.");
+
+            }
+
+        }
+
+        async function guardarCambiosHistorial(){
+
+            if(!historialActual) return;
+
+            const registros = historial[historialActual] || [];
+            const promesas  = [];
+
+            document.querySelectorAll("#cuerpoHistorial tr").forEach(fila => {
+                const fecha  = fila.getAttribute("data-fecha");
+                const celdas = fila.querySelectorAll(".celda-editable");
+                if(celdas.length >= 2){
+                    const reg = registros.find(r => r.fecha === fecha);
+                    if(reg){
+                        const nuevaEntrada = celdas[0].innerText.trim();
+                        const nuevaSalida  = celdas[1].innerText.trim();
+                        if(nuevaEntrada !== reg.entrada && nuevaEntrada !== "-"){
+                            promesas.push(fetch(`${API}/historial.php`, {
+                                method:"POST", headers:{"Content-Type":"application/json"},
+                                body: JSON.stringify({ matricula:historialActual, fecha, hora:nuevaEntrada, tipoRegistro:"entrada" })
+                            }));
+                        }
+                        if(nuevaSalida !== reg.salida && nuevaSalida !== "-"){
+                            promesas.push(fetch(`${API}/historial.php`, {
+                                method:"POST", headers:{"Content-Type":"application/json"},
+                                body: JSON.stringify({ matricula:historialActual, fecha, hora:nuevaSalida, tipoRegistro:"salida" })
+                            }));
+                        }
+                        reg.entrada = nuevaEntrada;
+                        reg.salida  = nuevaSalida;
+                    }
+                }
+            });
+
+            await Promise.all(promesas);
+
+        }
+
+        // ─────────────────────────────────────────
+        // Imprimir
+        // ─────────────────────────────────────────
+        function imprimirHistorial(){
+
+            const persona     = personas.find(p => p.matricula === historialActual);
+            const filtroTexto = {dia:"Día", semana:"Semana", mes:"Mes"}[filtroActual];
+
+            const hdr = document.getElementById("printHeader");
+            document.getElementById("printSubtitulo").textContent =
+                persona
+                ? `${persona.nombre}  ·  ${persona.tipo}  ·  Matrícula: ${persona.matricula}  ·  Período: ${filtroTexto}`
+                : "";
+
+            hdr.classList.remove("hidden");
+            window.print();
+            hdr.classList.add("hidden");
+
+        }
+
+        // ─────────────────────────────────────────
+        // Descargar PDF
+        // ─────────────────────────────────────────
+        function descargarPDF(){
+
+            const { jsPDF }   = window.jspdf;
+            const doc         = new jsPDF();
+            const persona     = personas.find(p => p.matricula === historialActual);
+            const filtroTexto = {dia:"Día", semana:"Semana", mes:"Mes"}[filtroActual];
+
+            // Encabezado
+            doc.setFontSize(18);
+            doc.setTextColor(200, 59, 116);
+            doc.text("OSIN A.C. — Historial de Asistencia", 14, 20);
+
+            doc.setFontSize(11);
+            doc.setTextColor(80, 80, 80);
+
+            if(persona){
+                doc.text(`Nombre: ${persona.nombre}`, 14, 30);
+                doc.text(`Tipo: ${persona.tipo}    Matrícula: ${persona.matricula}`, 14, 38);
+                doc.text(`Instrumento: ${persona.instrumento}    Período: ${filtroTexto}`, 14, 46);
+            }
+
+            // Filas de la tabla
+            const filas = [];
+            document.querySelectorAll("#cuerpoHistorial tr").forEach((fila, i) => {
+
+                const td = fila.querySelectorAll("td");
+                if(td.length >= 6){
+                    filas.push([
+                        i + 1,
+                        td[1].innerText,
+                        td[2].innerText,
+                        td[3].innerText,
+                        td[4].innerText,
+                        td[5].innerText
+                    ]);
+                }
+
+            });
+
+            doc.autoTable({
+                startY            : persona ? 54 : 30,
+                head              : [["#","Fecha","Día","Entrada","Salida","Estado"]],
+                body              : filas,
+                headStyles        : { fillColor:[17,181,176] },
+                alternateRowStyles: { fillColor:[245,245,245] },
+                styles            : { fontSize:10 }
+            });
+
+            const nombre = persona
+                ? `Historial_${persona.nombre.replace(/ /g,"_")}_${filtroTexto}.pdf`
+                : "Historial.pdf";
+
+            doc.save(nombre);
+
+        }
+
+        // ─────────────────────────────────────────
+        // Descargar Excel
+        // ─────────────────────────────────────────
+        function descargarExcel(){
+
+            const persona     = personas.find(p => p.matricula === historialActual);
+            const filtroTexto = {dia:"Día", semana:"Semana", mes:"Mes"}[filtroActual];
+
+            const datos = [["#","Fecha","Día","Entrada","Salida","Estado"]];
+
+            document.querySelectorAll("#cuerpoHistorial tr").forEach((fila, i) => {
+
+                const td = fila.querySelectorAll("td");
+                if(td.length >= 6){
+                    datos.push([
+                        i + 1,
+                        td[1].innerText,
+                        td[2].innerText,
+                        td[3].innerText,
+                        td[4].innerText,
+                        td[5].innerText
+                    ]);
+                }
+
+            });
+
+            const hoja  = XLSX.utils.aoa_to_sheet(datos);
+            const libro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(libro, hoja, `Historial ${filtroTexto}`);
+
+            const nombre = persona
+                ? `Historial_${persona.nombre.replace(/ /g,"_")}_${filtroTexto}.xlsx`
+                : "Historial.xlsx";
+
+            XLSX.writeFile(libro, nombre);
+
+        }
+
+        // ═══════════════════════════════════════════
+// ELIMINAR PERSONA
+// ═══════════════════════════════════════════
+async function eliminarPersona(matricula){
+
+    if(!confirm("¿Deseas eliminar esta persona?")) return;
+
+    try {
+        await fetch(`${API}/personas.php`, {
+            method : "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body   : JSON.stringify({ matricula })
+        });
+        delete historial[matricula];
+        await cargarPersonas();
+        alert("Persona eliminada correctamente.");
+    } catch(e) {
+        alert("Error al eliminar");
+    }
+
+}
+
+// ═══════════════════════════════════════════
+// EDITAR PERSONA
+// ═══════════════════════════════════════════
+        async function editarPersona(matricula){
+
+            const persona = personas.find(p => p.matricula === matricula);
+            if(!persona) return;
+
+            const nuevoNombre = prompt("Editar nombre:", persona.nombre);
+            if(nuevoNombre === null) return;
+
+            const nuevoInstrumento = prompt("Editar instrumento:", persona.instrumento);
+            if(nuevoInstrumento === null) return;
+
+            try {
+                await fetch(`${API}/personas.php`, {
+                    method : "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body   : JSON.stringify({ matricula, nombre: nuevoNombre, instrumento: nuevoInstrumento })
+                });
+                await cargarPersonas();
+                alert("Persona actualizada.");
+            } catch(e) {
+                alert("Error al actualizar");
+            }
+
+        }
+
+        // cargarPersonas() ya se llamó arriba al iniciar
+
+    </script>
+
+</body>
+
+</html>
